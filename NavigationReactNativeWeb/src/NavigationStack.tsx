@@ -3,6 +3,20 @@ import { View } from 'react-native';
 import { NavigationMotion, Scene, SharedElementMotion } from 'navigation-react-mobile';
 import { MobileHistoryManager } from 'navigation-react-mobile';
 
+type TransformationType = 'translate' | 'scale' | 'alpha' | 'rotate';
+type StyleValue = string | number;
+
+interface TransformConfig {
+  type: TransformationType;
+  start?: StyleValue;
+  from?: StyleValue;
+  startX?: StyleValue;
+  fromX?: StyleValue;
+  startY?: StyleValue;
+  fromY?: StyleValue;
+  items?: TransformConfig[];
+}
+
 const NavigationStack = ({unmountedStyle, mountedStyle, crumbedStyle, unmountStyle = () => null, crumbStyle = () => null,
   sharedElementTransition, duration, renderScene, renderTransition, children}) => {
   const customRender = typeof children === 'function' || renderTransition;
@@ -11,20 +25,30 @@ const NavigationStack = ({unmountedStyle, mountedStyle, crumbedStyle, unmountSty
   // (what about if they're empty like in the zoom sample?)
   const emptyStyle = {duration, translateX: 0, translateX_pc: 0, scaleX: 1, scaleX_pc: 100, alpha: 1};
   const returnOrCall = (item, ...args) => typeof item !== 'function' ? item : item(...args);
+  
+  const processStyleValue = (value: StyleValue): { value: number; isPercent: boolean } => {
+    const isPercent = typeof value === 'string' && value.endsWith('%');
+    const numericValue = isPercent ? +(value as string).slice(0, -1) : +value;
+    return { value: numericValue, isPercent };
+  };
+
   const getStyle = (trans) => {
     trans = !Array.isArray(trans) ? trans : {items: trans};
     const transStyle = {...emptyStyle};
-    const addStyle = (type: string, start: string | number) => {
-      if (start === undefined) return;
-      const percent = typeof start === 'string' && start.endsWith('%')
-      transStyle[type + (percent ? '_pc' : '')] = percent ? +(start as string).slice(0, -1) : +start;
+    const addStyle = (type: TransformationType, value: StyleValue) => {
+      if (value === undefined) return;
+      
+      const { value: numericValue, isPercent } = processStyleValue(value);
+      const suffix = isPercent ? '_pc' : '';
+      transStyle[type + suffix] = numericValue;
     }
-    const convertTrans = ({type, start, from, startX, fromX, startY, fromY, items}) => {
+    const convertTrans = (config: TransformConfig) => {
+      const { type, start, from, startX, fromX, startY, fromY, items } = config;
+      
       if (type === 'translate' || type === 'scale') {
-        addStyle(`${type}X`, startX ?? fromX);
-        addStyle(`${type}Y`, startY ?? fromY);
+        addStyle((`${type}X`) as TransformationType, startX ?? fromX);
+        addStyle((`${type}Y`) as TransformationType, startY ?? fromY);
       }
-      // can do pivot? transform origin?
       if (type === 'alpha' || type === 'rotate') addStyle(type, start ?? from);
       items?.forEach(convertTrans);
     };
