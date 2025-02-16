@@ -46,8 +46,8 @@ const NavigationStack = ({unmountedStyle, mountedStyle, crumbedStyle, unmountSty
       const { type, start, from, startX, fromX, startY, fromY, items } = config;
       
       if (type === 'translate' || type === 'scale') {
-        addStyle(`${type}X` as TransformationType, startX ?? fromX);
-        addStyle(`${type}Y` as TransformationType, startY ?? fromY);
+        addStyle((`${type}X`) as TransformationType, startX ?? fromX);
+        addStyle((`${type}Y`) as TransformationType, startY ?? fromY);
       }
       if (type === 'alpha' || type === 'rotate') addStyle(type, start ?? from);
       items?.forEach(convertTrans);
